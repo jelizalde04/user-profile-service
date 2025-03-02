@@ -1,0 +1,43 @@
+# .github/workflows/deploy.yml
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          sudo systemctl enable docker
+
+      - name: Build Docker image
+        run: docker build -t update-user-email-microservice .
+
+      - name: Log in to AWS ECR
+        run: |
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <your-ecr-repo-url>
+
+      - name: Tag Docker image
+        run: docker tag update-user-email-microservice:latest <your-ecr-repo-url>/update-user-email-microservice:latest
+
+      - name: Push Docker image
+        run: docker push <your-ecr-repo-url>/update-user-email-microservice:latest
+
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@<your-ec2-ip> "
+            docker pull <your-ecr-repo-url>/update-user-email-microservice:latest
+            docker stop update-user-email-microservice || true
+            docker rm update-user-email-microservice || true
+            docker run -d -p 6002:6002 --name update-user-email-microservice <your-ecr-repo-url>/update-user-email-microservice:latest
+          "
