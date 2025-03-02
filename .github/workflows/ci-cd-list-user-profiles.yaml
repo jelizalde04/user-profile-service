@@ -1,0 +1,27 @@
+name: Deploy List User Profiles Microservice
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+
+      - name: Build
+        run: go build -o main .
+
+      - name: Deploy to AWS EC2
+        run: |
+          scp -i ${{ secrets.EC2_SSH_KEY }} main ec2-user@${{ secrets.EC2_HOST }}:/home/ec2-user/
+          ssh -i ${{ secrets.EC2_SSH_KEY }} ec2-user@${{ secrets.EC2_HOST }} 'sudo systemctl restart list-user-profiles'
