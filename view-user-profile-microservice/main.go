@@ -37,8 +37,8 @@ func main() {
     router.Use(middleware.CORSMiddleware)
     router.Use(middleware.JWTAuthMiddleware)
 
-    // Rate Limiting (10 requests per minute)
-    rateLimiter := middleware.NewRateLimiter(10, time.Minute)
+    // Rate Limiting (100 requests per 15 minutes)
+    rateLimiter := middleware.NewRateLimiter(100, 15*time.Minute)
     router.Use(rateLimiter.Middleware)
 
     // Routes
